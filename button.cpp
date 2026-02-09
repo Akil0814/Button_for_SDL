@@ -1,216 +1,232 @@
 #include "button.h"
 
-Button::Button(SDL_Renderer* renderer, SDL_Rect rect_button, SDL_Rect rect_message, SDL_Texture* texture_message,
-	Mix_Chunk* sound_effect_down, Mix_Chunk* sound_effect_up)
+#include <stdexcept>
+#include <utility>
+
+Button::Button(SDL_Renderer* renderer, SDL_Rect rect_button)
 {
-
-	init_assert<SDL_Renderer>(renderer, "Butten Renderer Error");
-	this->renderer = renderer;
-	this->rect_button = rect_button;
-
-	if (texture_message != nullptr)
-	{
-		have_message = true;
-		this->rect_message = rect_message;
-		this->texture_message = texture_message;
-	}
-
-	if (sound_effect_down != nullptr)
-	{
-		have_sound_effect_down = true;
-		this->sound_effect_down = sound_effect_down;
-	}
-
-	if (sound_effect_up != nullptr)
-	{
-		have_sound_effect_up = true;
-		this->sound_effect_up = sound_effect_up;
-	}
-
-
+    init_assert(renderer, "Button renderer must not be null.");
+    this->renderer = renderer;
+    this->rect_button = rect_button;
 }
 
 Button::Button(SDL_Renderer* renderer, SDL_Rect rect_button, SDL_Rect rect_message, SDL_Texture* texture_message,
-	Mix_Chunk* sound_effect_down, Mix_Chunk* sound_effect_up,
-	SDL_Color color_idle, SDL_Color color_hovered, SDL_Color color_pushed, SDL_Color color_frame)
-	:Button(renderer, rect_button, rect_message, texture_message, sound_effect_down, sound_effect_up)
+    Mix_Chunk* sound_effect_down, Mix_Chunk* sound_effect_up)
+    : Button(renderer, rect_button)
 {
-	this->color_idle = color_idle;
-	this->color_hovered = color_hovered;
-	this->color_pushed = color_pushed;
-	this->color_frame = color_frame;
+    this->rect_message = rect_message;
+    this->texture_message = texture_message;
+    this->sound_effect_down = sound_effect_down;
+    this->sound_effect_up = sound_effect_up;
 }
 
 Button::Button(SDL_Renderer* renderer, SDL_Rect rect_button, SDL_Rect rect_message, SDL_Texture* texture_message,
-	Mix_Chunk* sound_effect_down, Mix_Chunk* sound_effect_up,
-	SDL_Texture* texture_idle, SDL_Texture* texture_hovered, SDL_Texture* texture_pushed)
-	:Button(renderer, rect_button, rect_message, texture_message, sound_effect_down, sound_effect_up)
+    Mix_Chunk* sound_effect_down, Mix_Chunk* sound_effect_up,
+    SDL_Color color_idle, SDL_Color color_hovered, SDL_Color color_pushed, SDL_Color color_frame)
+    : Button(renderer, rect_button, rect_message, texture_message, sound_effect_down, sound_effect_up)
 {
-	init_assert<SDL_Texture>(texture_idle, "Butten Texture_idle Error");
-	init_assert<SDL_Texture>(texture_hovered, "Butten Texture_hovered Error");
-	init_assert<SDL_Texture>(texture_pushed, "Butten Texture_pushed Error");
-	have_texture = true;
-
-	this->texture_idle = texture_idle;
-	this->texture_hovered = texture_hovered;
-	this->texture_pushed = texture_pushed;
+    this->color_idle = color_idle;
+    this->color_hovered = color_hovered;
+    this->color_pushed = color_pushed;
+    this->color_frame = color_frame;
 }
 
-template<typename T>
-void Button::init_assert(T* ptr, const std::string& err_msg)const
+Button::Button(SDL_Renderer* renderer, SDL_Rect rect_button, SDL_Rect rect_message, SDL_Texture* texture_message,
+    Mix_Chunk* sound_effect_down, Mix_Chunk* sound_effect_up,
+    SDL_Texture* texture_idle, SDL_Texture* texture_hovered, SDL_Texture* texture_pushed)
+    : Button(renderer, rect_button, rect_message, texture_message, sound_effect_down, sound_effect_up)
 {
-	if (ptr == nullptr)
-	{
-		std::cout << err_msg << std::endl;
-		exit(-1);
-	}
+    init_assert(texture_idle, "Button texture_idle must not be null.");
+    init_assert(texture_hovered, "Button texture_hovered must not be null.");
+    init_assert(texture_pushed, "Button texture_pushed must not be null.");
+
+    have_texture = true;
+    this->texture_idle = texture_idle;
+    this->texture_hovered = texture_hovered;
+    this->texture_pushed = texture_pushed;
 }
 
-void Button::on_render()
+void Button::init_assert(const void* ptr, const char* err_msg)const
 {
-	if (!have_texture)
-	{
-		switch (status)
-		{
-		case Status::Idle:
-			SDL_SetRenderDrawColor(renderer, color_idle.r, color_idle.g, color_idle.b, color_idle.a);
-			break;
-		case Status::Hovered:
-			SDL_SetRenderDrawColor(renderer, color_hovered.r, color_hovered.g, color_hovered.b, color_hovered.a);
-			break;
-		case Status::Pushed:
-			SDL_SetRenderDrawColor(renderer, color_pushed.r, color_pushed.g, color_pushed.b, color_pushed.a);
-			break;
-		}
-		SDL_RenderFillRect(renderer, &rect_button);
-		SDL_SetRenderDrawColor(renderer, color_frame.r, color_frame.g, color_frame.b, color_frame.a);
-		SDL_RenderDrawRect(renderer, &rect_button);
-
-		if (have_message)
-			SDL_RenderCopy(renderer, texture_message, nullptr, &rect_message);
-	}
-	else
-	{
-		switch (status)
-		{
-		case Status::Idle:
-			SDL_RenderCopy(renderer, texture_idle, nullptr, &rect_button);
-			break;
-		case Status::Hovered:
-			SDL_RenderCopy(renderer, texture_hovered, nullptr, &rect_button);
-			break;
-		case Status::Pushed:
-			SDL_RenderCopy(renderer, texture_pushed, nullptr, &rect_button);
-			break;
-		}
-		if (have_message)
-			SDL_RenderCopy(renderer, texture_message, nullptr, &rect_message);
-	}
-
+    if (ptr == nullptr)
+    {
+        throw std::invalid_argument(err_msg);
+    }
 }
 
-void Button::process_event(const SDL_Event& event)
+void Button::render()
 {
-	if (on_hold)
-		return;
+    if (!have_texture)
+    {
+        switch (status)
+        {
+        case Status::Idle:
+            SDL_SetRenderDrawColor(renderer, color_idle.r, color_idle.g, color_idle.b, color_idle.a);
+            break;
+        case Status::Hovered:
+            SDL_SetRenderDrawColor(renderer, color_hovered.r, color_hovered.g, color_hovered.b, color_hovered.a);
+            break;
+        case Status::Pushed:
+            SDL_SetRenderDrawColor(renderer, color_pushed.r, color_pushed.g, color_pushed.b, color_pushed.a);
+            break;
+        }
 
-	switch (event.type)
-	{
-	case SDL_MOUSEMOTION:
-		if (status == Status::Idle && check_cursor_hit(event.motion.x, event.motion.y))
-			status = Status::Hovered;
-		else if (status == Status::Hovered && !check_cursor_hit(event.motion.x, event.motion.y))
-			status = Status::Idle;
-		break;
+        SDL_RenderFillRect(renderer, &rect_button);
+        SDL_SetRenderDrawColor(renderer, color_frame.r, color_frame.g, color_frame.b, color_frame.a);
+        SDL_RenderDrawRect(renderer, &rect_button);
+    }
+    else
+    {
+        SDL_Texture* current_texture = texture_idle;
+        switch (status)
+        {
+        case Status::Idle:
+            current_texture = texture_idle;
+            break;
+        case Status::Hovered:
+            current_texture = texture_hovered;
+            break;
+        case Status::Pushed:
+            current_texture = texture_pushed;
+            break;
+        }
 
-	case SDL_MOUSEBUTTONDOWN:
-		if (event.button.button == SDL_BUTTON_LEFT)
-		{
-			if (check_cursor_hit(event.button.x, event.button.y))
-			{
-				status = Status::Pushed;
-				if (have_sound_effect_down)
-					Mix_PlayChannel(-1, sound_effect_down, 0);
-			}
-		}
-		break;
+        SDL_RenderCopy(renderer, current_texture, nullptr, &rect_button);
+    }
 
-	case SDL_MOUSEBUTTONUP:
-		if (event.button.button == SDL_BUTTON_LEFT)
-		{
-			if (status == Status::Pushed)
-			{
-				time_on_click++;
-				status = Status::Idle;
-				if (have_sound_effect_up)
-					Mix_PlayChannel(-1, sound_effect_up, 0);
+    if (texture_message != nullptr)
+    {
+        SDL_RenderCopy(renderer, texture_message, nullptr, &rect_message);
+    }
+}
 
-				if (check_cursor_hit(event.button.x, event.button.y))
-				{
-					if (on_click)
-						on_click();
-				}
-			}
-		}
-		break;
+bool Button::handle_event(const SDL_Event& event)
+{
+    if (!enabled)
+    {
+        return false;
+    }
 
-	default:
-		break;
-	}
+    switch (event.type)
+    {
+    case SDL_MOUSEMOTION:
+        if (is_pressing)
+        {
+            const Status new_status = check_cursor_hit(event.motion.x, event.motion.y) ? Status::Pushed : Status::Idle;
+            status = new_status;
+            return true;
+        }
+        else
+        {
+            return update_hover_status(event.motion.x, event.motion.y);
+        }
+
+    case SDL_MOUSEBUTTONDOWN:
+        if (event.button.button == SDL_BUTTON_LEFT && check_cursor_hit(event.button.x, event.button.y))
+        {
+            is_pressing = true;
+            status = Status::Pushed;
+            if (sound_effect_down != nullptr)
+            {
+                Mix_PlayChannel(-1, sound_effect_down, 0);
+            }
+            return true;
+        }
+        return false;
+
+    case SDL_MOUSEBUTTONUP:
+        if (event.button.button == SDL_BUTTON_LEFT && is_pressing)
+        {
+            is_pressing = false;
+            if (sound_effect_up != nullptr)
+            {
+                Mix_PlayChannel(-1, sound_effect_up, 0);
+            }
+
+            if (check_cursor_hit(event.button.x, event.button.y))
+            {
+                ++time_on_click;
+                status = Status::Hovered;
+                if (on_click)
+                {
+                    on_click();
+                }
+            }
+            else
+            {
+                status = Status::Idle;
+            }
+            return true;
+        }
+        return false;
+
+    default:
+        return false;
+    }
 }
 
 bool Button::check_cursor_hit(int x, int y)const
 {
-	return x >= rect_button.x && x < (rect_button.x + rect_button.w) &&
-		y >= rect_button.y && y < (rect_button.y + rect_button.h);
+    const SDL_Point cursor = { x, y };
+    return SDL_PointInRect(&cursor, &rect_button) == SDL_TRUE;
+}
+
+bool Button::update_hover_status(int x, int y)
+{
+    const Status new_status = check_cursor_hit(x, y) ? Status::Hovered : Status::Idle;
+    const bool changed = status != new_status;
+    status = new_status;
+    return changed || new_status == Status::Hovered;
 }
 
 void Button::set_on_click(std::function<void()> func)
 {
-	on_click = std::move(func);
+    on_click = std::move(func);
 }
 
 Button::Status Button::get_status()const
 {
-	return status;
+    return status;
 }
 
-void Button::set_status(Status set_status)
+void Button::set_button_rect(SDL_Rect new_rect_button)
 {
-	status = set_status;
+    rect_button = new_rect_button;
 }
 
-void Button::change_rect_button(SDL_Rect new_rect_button)
+void Button::set_message_rect(SDL_Rect new_rect_message)
 {
-	rect_button = new_rect_button;
+    rect_message = new_rect_message;
 }
 
-void Button::change_rect_message(SDL_Rect new_rect_message)
+void Button::set_message_texture(SDL_Texture* new_texture_message)
 {
-	rect_message = new_rect_message;
+    texture_message = new_texture_message;
 }
 
-void Button::change_texture_message(SDL_Texture* new_texture_message)
+void Button::set_enabled(bool new_enabled)
 {
-	texture_message = new_texture_message;
+    enabled = new_enabled;
+    if (!enabled)
+    {
+        is_pressing = false;
+        status = Status::Idle;
+    }
 }
 
-void Button::set_on_hold()
+bool Button::is_enabled() const
 {
-	on_hold = true;
+    return enabled;
 }
 
-void Button::reset_on_hold()
+int Button::click_count() const
 {
-	on_hold = false;
+    return time_on_click;
 }
 
-int Button::get_time_on_click()const
+void Button::reset_click_count()
 {
-	return time_on_click;
+    time_on_click = 0;
 }
 
-bool Button::check_on_hold()const
-{
-	return on_hold;
-}
+

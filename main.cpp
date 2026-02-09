@@ -70,11 +70,11 @@ int main(int argc, char* argv[])
 	{
 		while (SDL_PollEvent(&event))//拉取事件
 		{
-			button_test.process_event(event);/////test button
+			button_test.handle_event(event);
 
 			if (event.type == SDL_QUIT)
 			{
-				//is_quit = true;
+				is_quit = true;
 			}
 			else if (event.type == SDL_MOUSEMOTION)
 			{
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 		SDL_SetRenderDrawColor(renderer, 0, 0, 100, 255);//设置窗口背景
 		SDL_RenderClear(renderer);//清理窗口
 
-		button_test.on_render();/////test button
+		button_test.render();/////test button
 
 		SDL_RenderPresent(renderer);//将渲染数据展示到窗口上
 	}
