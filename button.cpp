@@ -112,8 +112,6 @@ bool Button::handle_event(const SDL_Event& event)
     case SDL_MOUSEMOTION:
         if (is_pressing)
         {
-            const Status new_status = check_cursor_hit(event.motion.x, event.motion.y) ? Status::Pushed : Status::Idle;
-            status = new_status;
             return true;
         }
         else
@@ -146,16 +144,12 @@ bool Button::handle_event(const SDL_Event& event)
             if (check_cursor_hit(event.button.x, event.button.y))
             {
                 ++time_on_click;
-                status = Status::Hovered;
                 if (on_click)
                 {
                     on_click();
                 }
             }
-            else
-            {
-                status = Status::Idle;
-            }
+            status = Status::Idle;
             return true;
         }
         return false;
